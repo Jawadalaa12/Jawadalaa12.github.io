@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pong vs AI</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      background: #111;
+      display: block;
+      border: 2px solid #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Game objects
+    const paddleWidth = 10;
+    const paddleHeight = 100;
+    const player = { x: 0, y: canvas.height / 2 - paddleHeight / 2, dy: 0 };
+    const ai = { x: canvas.width - paddleWidth, y: canvas.height / 2 - paddleHeight / 2, speed: 3 };
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: 8,
+      speed: 5,
+      dx: 5,
+      dy: 3
+    };
+
+    let upPressed = false;
+    let downPressed = false;
+
+    // Controls
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowUp') upPressed = true;
+      if (e.key === 'ArrowDown') downPressed = true;
+    });
+
+    document.addEventListener('keyup', e => {
+      if (e.key === 'ArrowUp') upPressed = false;
+      if (e.key === 'ArrowDown') downPressed = false;
+    });
+
+    function drawRect(x, y, w, h) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawCircle(x, y, r) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      // reverse direction
+      ball.dx = -ball.dx;
+      ball.speed = 5;
+    }
+
+    function update() {
+      // Move player paddle
+      if (upPressed && player.y > 0) player.y -= 7;
+      if (downPressed && player.y < canvas.height - paddleHeight) player.y += 7;
+
+      // Move AI paddle
+      if (ball.y < ai.y + paddleHeight / 2) {
+        ai.y -= ai.speed;
+      } else {
+        ai.y += ai.speed;
+      }
+      // Clamp AI
+      ai.y = Math.max(Math.min(ai.y, canvas.height - paddleHeight), 0);
+
+      // Move ball
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Wall collision
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.dy = -ball.dy;
+      }
+
+      // Paddle collision
+      if (
+        ball.x - ball.radius < player.x + paddleWidth &&
+        ball.y > player.y &&
+        ball.y < player.y + paddleHeight
+      ) {
+        ball.dx = -ball.dx;
+        ball.speed += 0.5;
+      }
+
+      if (
+        ball.x + ball.radius > ai.x &&
+        ball.y > ai.y &&
+        ball.y < ai.y + paddleHeight
+      ) {
+        ball.dx = -ball.dx;
+        ball.speed += 0.5;
+      }
+
+      // Score reset
+      if (ball.x + ball.radius < 0 || ball.x - ball.radius > canvas.width) {
+        resetBall();
+      }
+
+      // Update velocity
+      ball.dx = Math.sign(ball.dx) * ball.speed;
+      ball.dy = Math.sign(ball.dy) * Math.abs(ball.dy);
+    }
+
+    function draw() {
+      // Clear
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Draw paddles
+      drawRect(player.x, player.y, paddleWidth, paddleHeight);
+      drawRect(ai.x, ai.y, paddleWidth, paddleHeight);
+      // Draw ball
+      drawCircle(ball.x, ball.y, ball.radius);
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // Start game
+    loop();
+  </script>
+</body>
+</html>
